@@ -1,5 +1,6 @@
 package com.kuehnenagel.citylist.cityManagement.mvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
@@ -11,14 +12,14 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @WebMvcTest(controllers = CityController.class)
-@Import(MvcTestSecurityConfig.class)
+@WithMockUser(username = "fabius.bile", password = "deathtothefalseemperor",roles = "ALLOW_EDIT")
 public class CityControllerTest {
 
     @MockBean
@@ -29,13 +30,15 @@ public class CityControllerTest {
 
     @Test
     public void successfullyGetListOfCitiesWithDefaultFilterOptions() throws Exception {
-        this.mockMvc.perform(get("/api/v1/cities"))
+        this.mockMvc.perform(get("/api/v1/cities")
+                        .with(csrf()))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     public void successfullyGetListOfCitiesWithCustomFilterOptions() throws Exception {
-        this.mockMvc.perform(get("/api/v1/cities?name=Tokyo&page=0&size=10&sortNy=name"))
+        this.mockMvc.perform(get("/api/v1/cities?name=Tokyo&page=0&size=10&sortNy=name")
+                        .with(csrf()))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
@@ -44,7 +47,8 @@ public class CityControllerTest {
         this.mockMvc.perform(
                         MockMvcRequestBuilders
                                 .put("/api/v1/cities")
-                                .with(httpBasic("fabius.bile", "deathtothefalseemperor"))
+                                .with(csrf())
+                                //.with(httpBasic("fabius.bile", "deathtothefalseemperor"))
                                 .content(
                                         new ObjectMapper().writeValueAsString(
                                                 CityDto.builder()
@@ -57,10 +61,9 @@ public class CityControllerTest {
     }
 
     @Test
-    public void failToUpdateCityWhenUserNotAuthorized() throws Exception {
+    public void failToUpdateCityWhenUserNotAuthenticated() throws Exception {
         this.mockMvc.perform(MockMvcRequestBuilders
                         .put("/api/v1/cities")
-                        .with(httpBasic("leman.russ", "fortheemperor"))
                         .content(
                                 new ObjectMapper().writeValueAsString(
                                         CityDto.builder()
@@ -69,7 +72,7 @@ public class CityControllerTest {
                                                 .photoLink("http://www.photo.com")
                                                 .build()))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
 }
