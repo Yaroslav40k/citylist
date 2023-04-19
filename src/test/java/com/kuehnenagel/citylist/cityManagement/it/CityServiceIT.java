@@ -27,8 +27,7 @@ public class CityServiceIT {
     @Container
     public static CustomPostgresContainer postgresContainer =
             CustomPostgresContainer.getInstance()
-                    .withExposedPorts(5432)
-                    .withInitScript("schema.sql");
+                    .withExposedPorts(5432);
 
     @Test
     public void successfullyFetchCitiesPageWithDefaultSearchSettings()  {
